@@ -1,7 +1,16 @@
+# Erlang binary files
+.eunit
+deps
+*.o
+*.beam
+*.plt
+erl_crash.dump
 /_build
 /deps
-erl_crash.dump
 *.ez
+
+# Emacs backup files.
+*~
 
 # =========================
 # Operating System Files
