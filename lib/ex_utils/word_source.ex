@@ -1,37 +1,45 @@
 defmodule ExUtils.WordSource do
 
-	def start(content) do
-		definitions = content |> make_definitions
-		spawn_link(ExUtils.WordSource, :loop, [definitions])
+	@doc """
+  Start the word source server with the specified `content`.
+
+  Optionally, one can supply `generator`. The default generator uses
+  the built-in Erlang random number generator. The generator is a
+  function taking a single integer argument that returns a number in
+  the range 1..N (N is the actual argument). 
+  """
+	def start(content, generator \\ &:random.uniform/1) do
+		terms = content |> make_terms
+		spawn_link(ExUtils.WordSource, :loop, [terms, generator])
 	end
 
-	def loop(definitions) do
+	def loop(terms, generator) do
 		receive do
-			{:next, requester} ->
-				definition = Enum.at(definitions,
-														 :random.uniform(length(definitions)))
-				send(requester, {:response, :next, definition, self})
-			  loop(definitions)
+			{:next, requester} = request ->
+				term = Enum.at(terms,
+											 generator.(length(terms)) - 1)
+				send(requester, {:response, term, request})
+			  loop(terms, generator)
 			:stop ->
 				:ok
 			any ->
 				IO.puts("Unexpected message: #{inspect(any)}.")
-				loop(definitions)
+				loop(terms, generator)
 		end
 	end
 
 	@doc """
-  Make definitions from `content`.
+  Make terms from `content`.
   """
-	def make_definitions(content) when byte_size(content) == 0, do: []
-	def make_definitions(content) do
+	def make_terms(content) when byte_size(content) == 0, do: []
+	def make_terms(content) do
 		content
 		|> String.split(~r{\r\n\r\n})
 		|> Enum.map(&(String.split(&1, ~r{\r\n:   }, parts: 2)))
-		|> Enum.map(&split_definitions/1)
+		|> Enum.map(&split_terms/1)
 	end
 
-	defp split_definitions([term | [definition_text]]) do
+	defp split_terms([term | [definition_text]]) do
 		[term | [String.replace(definition_text, ~r{\r\n:   }, "; ")]]
 	end
 				 
