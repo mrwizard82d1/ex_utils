@@ -71,4 +71,24 @@ defmodule WordSourceTest do
 		assert(not Process.alive?(actual_server))
 	end
 
+	test "next/0 - server with RNG - random values." do
+		# Collect the first five.
+		to_collect_count = 5
+		ExUtils.WordSource.start(@many_terms)
+		map_f = fn(_) ->
+								ExUtils.WordSource.next()
+						end
+		first_terms = Enum.map(1..to_collect_count, map_f)
+
+		# Stop the server.
+		ExUtils.WordSource.stop()
+
+		# Collect the next five.
+		ExUtils.WordSource.start(@many_terms)
+		next_terms = Enum.map(1..to_collect_count, map_f)
+
+		# The two collections should NOT be the equal.
+		assert(not (next_terms == first_terms))
+	end
+
 end
