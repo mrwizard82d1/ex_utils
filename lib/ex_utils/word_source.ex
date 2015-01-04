@@ -1,5 +1,7 @@
 defmodule ExUtils.WordSource do
 
+  @server_name ExUtils.WordSource
+
 	@doc """
   Start the word source server with the specified `content`.
 
@@ -10,7 +12,22 @@ defmodule ExUtils.WordSource do
   """
 	def start(content, generator \\ &:random.uniform/1) do
 		terms = content |> make_terms
-		spawn_link(ExUtils.WordSource, :loop, [terms, generator])
+		server = spawn(__MODULE__, :loop, [terms, generator])
+		:global.register_name(@server_name, server)
+	end
+
+	def next() do
+		request = {:next, self}
+		send(:global.whereis_name(@server_name), request)
+
+		receive do
+			{:response, term, actual_request} when request == actual_request ->
+				term
+		end
+	end
+
+	def stop() do
+		send(:global.whereis_name(@server_name), :stop)
 	end
 
 	def loop(terms, generator) do
@@ -26,6 +43,15 @@ defmodule ExUtils.WordSource do
 				IO.puts("Unexpected message: #{inspect(any)}.")
 				loop(terms, generator)
 		end
+	end
+
+	@doc """
+  Returns the PID of the server.
+
+  I intend this code to be called for testing only.
+  """
+	def server() do
+		:global.whereis_name(@server_name)
 	end
 
 	@doc """
