@@ -88,7 +88,7 @@ defmodule WordSourceTest do
 		next_terms = Enum.map(1..to_collect_count, map_f)
 
 		# The two collections should NOT be the equal.
-		assert(not (next_terms == first_terms))
+		assert(next_terms != first_terms)
 	end
 
 end

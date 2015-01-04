@@ -12,13 +12,18 @@ defmodule ExUtils.WordSource do
   """
 	def start(content, generator \\ &:random.uniform/1) do
 		terms = content |> make_terms
+		server = spawn(__MODULE__, :_start_p, [terms, generator])
+		:global.register_name(@server_name, server)
+	end
+
+	def _start_p(terms, generator) do
 		# Seed random number generator with unique value to ensure that
 		# different servers produce different sequences.
 		if generator == &:random.uniform/1 do
 			:random.seed(:erlang.now())
 		end
-		server = spawn(__MODULE__, :loop, [terms, generator])
-		:global.register_name(@server_name, server)
+
+		loop(terms, generator)
 	end
 
 	def next() do
